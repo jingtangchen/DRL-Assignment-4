@@ -13,7 +13,7 @@ class Agent(object):
         self.state_dim = 3
         self.action_dim = 1
         self.lr_pi = 0.001
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
         self.network = PolicyNetwork(self.state_dim, self.action_dim, self.lr_pi).to(self.device)
         self.network.load_state_dict(torch.load('sac_actor_final.pt'))
 
