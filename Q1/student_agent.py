@@ -19,7 +19,7 @@ class Agent(object):
 
     def act(self, observation):
         with torch.no_grad():
-            action, _ = self.network.sample(torch.FloatTensor(observation).to(self.device))
+            action, _ = self.network.sample(torch.FloatTensor(observation).to(self.device)) 
             return action
         
         return self.action_space.sample()
