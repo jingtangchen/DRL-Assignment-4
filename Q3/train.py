@@ -36,11 +36,11 @@ class ReplayBuffer:
             done_mask = 0.0 if done else 1.0
             done_mask_lst.append([done_mask])
 
-        s_batch = torch.tensor(s_lst, dtype=torch.float).to(self.dev)
-        a_batch = torch.tensor(a_lst, dtype=torch.float).to(self.dev)
-        r_batch = torch.tensor(r_lst, dtype=torch.float).to(self.dev)
-        s_prime_batch = torch.tensor(s_prime_lst, dtype=torch.float).to(self.dev)
-        done_batch = torch.tensor(done_mask_lst, dtype=torch.float).to(self.dev)
+        s_batch = torch.tensor(np.array(s_lst), dtype=torch.float).to(self.dev)
+        a_batch = torch.tensor(np.array(a_lst), dtype=torch.float).to(self.dev)
+        r_batch = torch.tensor(np.array(r_lst), dtype=torch.float).to(self.dev)
+        s_prime_batch = torch.tensor(np.array(s_prime_lst), dtype=torch.float).to(self.dev)
+        done_batch = torch.tensor(np.array(done_mask_lst), dtype=torch.float).to(self.dev)
 
         return s_batch, a_batch, r_batch, s_prime_batch, done_batch
 
@@ -79,9 +79,14 @@ class PolicyNetwork(nn.Module):
         x_t = dist.rsample()
         y_t = torch.tanh(x_t)
         action = self.action_scale * y_t + self.action_bias
-        log_prob = dist.log_prob(x_t)
-        log_prob -= torch.sum(torch.log(self.action_scale * (1 - y_t.pow(2)) + 1e-6), dim=-1, keepdim=True)
-        return action, log_prob
+
+        # Log-prob of action (summed over action dimensions, keep 2D [batch, 1])
+        log_prob = dist.log_prob(x_t).sum(dim=-1, keepdim=True)
+        log_prob -= torch.sum(
+            torch.log(self.action_scale * (1 - y_t.pow(2)) + 1e-6), dim=-1, keepdim=True
+        )
+
+        return action, log_prob  # both [batch_size, action_dim] and [batch_size, 1]
 
 
 class QNetwork(nn.Module):
@@ -90,7 +95,7 @@ class QNetwork(nn.Module):
         self.fc_s = nn.Linear(state_dim, 32)
         self.fc_a = nn.Linear(action_dim, 32)
         self.fc1 = nn.Linear(64, 64)
-        self.fc_out = nn.Linear(64, action_dim)
+        self.fc_out = nn.Linear(64, 1)
         self.optimizer = optim.Adam(self.parameters(), lr=critic_lr)
 
     def forward(self, s, a):
@@ -103,8 +108,8 @@ class QNetwork(nn.Module):
 
 class SAC_Agent:
     def __init__(self):
-        self.state_dim = 5
-        self.action_dim = 1
+        self.state_dim = 67
+        self.action_dim = 21
         self.lr_pi = 0.001
         self.lr_q = 0.001
         self.gamma = 0.98
