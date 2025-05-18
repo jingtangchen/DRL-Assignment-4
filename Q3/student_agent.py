@@ -13,7 +13,7 @@ class Agent(object):
         self.lr_pi = 0.001
         self.device = torch.device("cpu")
         self.network = PolicyNetwork(self.state_dim, self.action_dim, self.lr_pi).to(self.device)
-        self.network.load_state_dict(torch.load('sac_actor_final.pt'))
+        self.network.load_state_dict(torch.load('sac_actor_final.pt', map_location=torch.device('cpu')))
 
     def act(self, observation):
         with torch.no_grad():
